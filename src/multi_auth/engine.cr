@@ -9,6 +9,7 @@ class MultiAuth::Engine
                      when "twitter"  then Provider::Twitter
                      when "restream" then Provider::Restream
                      when "discord"  then Provider::Discord
+                     when "x"        then Provider::X
                      else
                        raise "Provider #{provider} not implemented"
                      end
