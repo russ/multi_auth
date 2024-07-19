@@ -1,5 +1,5 @@
 class MultiAuth::Provider::Google < MultiAuth::Provider
-  def authorize_uri(scope = nil)
+  def authorize_uri(scope = nil, state = nil)
     defaults = [
       "https://www.googleapis.com/auth/user.emails.read",
       "https://www.googleapis.com/auth/user.phonenumbers.read",
@@ -18,7 +18,7 @@ class MultiAuth::Provider::Google < MultiAuth::Provider
       redirect_uri: redirect_uri
     )
 
-    client.get_authorize_uri(scope)
+    client.get_authorize_uri(scope, state)
   end
 
   def user(params : Hash(String, String))
@@ -61,7 +61,7 @@ class MultiAuth::Provider::Google < MultiAuth::Provider
 
   private def primary(field)
     primary = primary?(field)
-    raise "No primary in #{json[field]}" unless primary
+    raise "No primary in field #{field}" unless primary
     primary
   end
 
@@ -84,12 +84,18 @@ class MultiAuth::Provider::Google < MultiAuth::Provider
     @json = JSON.parse(raw_json)
     raise json["error"]["message"].as_s if json["error"]?
 
-    name = primary("names")
+    name = if primary?("names")
+      primary("names")
+    else
+      JSON::Any.new({} of String => JSON::Any)
+    end
+
+    display_name = name["displayName"]?.to_s
 
     user = User.new(
       "google",
       json["resourceName"].as_s,
-      name["displayName"].as_s,
+      display_name,
       raw_json,
       access_token
     )
